@@ -1,0 +1,6 @@
+{
+  "name": "한글 글쇠·손가락 기초 연습",
+  "description": "외국인 유학생을 위한 한글 두벌식 키보드 글쇠 위치와 기본 손가락 기초 연습 프로그램",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

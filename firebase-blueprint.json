@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with nickname, display tag, and cumulative practice stats",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "nickname": { "type": "string", "maxLength": 30 },
+        "displayName": { "type": "string", "maxLength": 50 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "totalPracticeSeconds": { "type": "number" },
+        "totalKeyInputs": { "type": "number" },
+        "totalWrongInputs": { "type": "number" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "nickname", "displayName", "email", "totalPracticeSeconds"]
+    },
+    "PracticeLog": {
+      "title": "PracticeLog",
+      "description": "Log of a completed keyboard practice session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "userDisplay": { "type": "string", "maxLength": 50 },
+        "durationSeconds": { "type": "number" },
+        "totalInputs": { "type": "number" },
+        "wrongInputs": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userDisplay", "durationSeconds", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and cumulative typing practice statistics"
+    },
+    "/practice_logs/{logId}": {
+      "schema": "PracticeLog",
+      "description": "Session history log documents"
+    }
+  }
+}

@@ -34,7 +34,7 @@ import {
   OperationType,
 } from './lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { AlertTriangle, LogOut, RotateCcw } from 'lucide-react';
+import { AlertTriangle, LogOut, RotateCcw, X } from 'lucide-react';
 
 const STORAGE_KEY = 'korean_keyboard_practice_v1';
 
@@ -94,6 +94,13 @@ export default function App() {
   const [currentTrackId, setCurrentTrackId] = useState<string>('track1');
   const [isPlayingMusic, setIsPlayingMusic] = useState<boolean>(false);
   const [musicVolume, setMusicVolume] = useState<number>(0.6);
+  const [audioAlert, setAudioAlert] = useState<{
+    show: boolean;
+    type: 'autoplay' | 'load_error';
+    message: string;
+    details?: string;
+    attemptedUrl?: string;
+  } | null>(null);
 
   // Modal state
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
@@ -106,6 +113,15 @@ export default function App() {
       console.warn('LocalStorage save failed:', err);
     }
   }, [session]);
+
+  // Auto-dismiss audio alert after 8 seconds
+  useEffect(() => {
+    if (!audioAlert) return;
+    const timer = setTimeout(() => {
+      setAudioAlert(null);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [audioAlert]);
 
   // Listen to Firebase Auth state
   useEffect(() => {
@@ -366,22 +382,59 @@ export default function App() {
     if (isPlayingMusic) {
       soundManager.pauseMusic();
       setIsPlayingMusic(false);
+      setAudioAlert(null);
     } else {
       const track = MUSIC_TRACKS.find((t) => t.id === currentTrackId) || MUSIC_TRACKS[0];
-      const ok = await soundManager.playMusic(track.src);
-      if (ok) {
+      setAudioAlert(null);
+      const result = await soundManager.playMusic(track.src);
+      if (result.success) {
         setIsPlayingMusic(true);
+        setAudioAlert(null);
+      } else {
+        setIsPlayingMusic(false);
+        const isAutoplay = result.reason === 'autoplay_blocked';
+        console.error('[음악 재생 실패]', {
+          trackId: track.id,
+          trackTitle: track.title,
+          src: track.src,
+          result,
+        });
+        setAudioAlert({
+          show: true,
+          type: isAutoplay ? 'autoplay' : 'load_error',
+          message: isAutoplay
+            ? '브라우저 보안 및 자동 재생 정책으로 인해 음악 재생이 차단되었습니다. 화면 아무 곳이나 한 번 클릭하신 후 다시 [재생] 버튼을 눌러주세요.'
+            : `음악 파일(${track.title}) 로드에 실패했습니다. (404 Not Found 또는 파일 경로 오류)`,
+          details: result.errorMessage,
+          attemptedUrl: result.finalUrl || track.src,
+        });
       }
     }
   }, [isPlayingMusic, currentTrackId]);
 
-  const handleSelectTrack = useCallback((trackId: string) => {
+  const handleSelectTrack = useCallback(async (trackId: string) => {
     setCurrentTrackId(trackId);
     const track = MUSIC_TRACKS.find((t) => t.id === trackId);
     if (track) {
       soundManager.initMusic(track.src);
       if (isPlayingMusic) {
-        soundManager.playMusic(track.src);
+        const result = await soundManager.playMusic(track.src);
+        if (result.success) {
+          setAudioAlert(null);
+        } else {
+          setIsPlayingMusic(false);
+          const isAutoplay = result.reason === 'autoplay_blocked';
+          console.error('[오디오 트랙 변경 후 재생 실패]', { track, result });
+          setAudioAlert({
+            show: true,
+            type: isAutoplay ? 'autoplay' : 'load_error',
+            message: isAutoplay
+              ? '브라우저 보안 및 자동 재생 정책으로 인해 다음 트랙 재생이 차단되었습니다. 화면 클릭 후 다시 재생을 눌러주세요.'
+              : `음악 파일(${track.title}) 로드에 실패했습니다.`,
+            details: result.errorMessage,
+            attemptedUrl: result.finalUrl || track.src,
+          });
+        }
       }
     }
   }, [isPlayingMusic]);
@@ -666,6 +719,41 @@ export default function App() {
           }
         }}
       />
+
+      {/* Audio Playback Alert Banner */}
+      {audioAlert && audioAlert.show && (
+        <div className="bg-rose-900/95 text-white border-b border-rose-700/80 shadow-md px-3 py-2 text-xs flex items-center justify-between gap-2 shrink-0 z-50">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="truncate">
+              <span className="font-extrabold text-amber-300 mr-2">
+                {audioAlert.type === 'autoplay' ? '[브라우저 정책 차단]' : '[음원 파일 로드 오류]'}
+              </span>
+              <span className="text-rose-100">{audioAlert.message}</span>
+              {audioAlert.attemptedUrl && (
+                <span className="text-[10px] text-rose-300 ml-2 hidden md:inline font-mono">
+                  (경로: {audioAlert.attemptedUrl})
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => handleToggleMusic()}
+              className="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded text-[11px] font-bold transition-all shadow-xs cursor-pointer"
+            >
+              다시 시도
+            </button>
+            <button
+              onClick={() => setAudioAlert(null)}
+              className="p-1 text-rose-300 hover:text-white rounded hover:bg-rose-800 transition-colors cursor-pointer"
+              title="알림 닫기"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Practice Workspace - All in one view without viewport scrolling */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-2.5 flex flex-col gap-2 min-h-0 overflow-hidden">

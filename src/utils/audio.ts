@@ -47,17 +47,38 @@ class SoundManager {
     }
   }
 
+  public resolveAudioUrl(src: string): string {
+    if (!src) return '';
+    if (
+      src.startsWith('http://') ||
+      src.startsWith('https://') ||
+      src.startsWith('data:') ||
+      src.startsWith('blob:')
+    ) {
+      return src;
+    }
+    const base = import.meta.env.BASE_URL || '/';
+    const cleanBase = base.endsWith('/') ? base : `${base}/`;
+
+    if (src.startsWith(cleanBase)) {
+      return src;
+    }
+    const cleanSrc = src.startsWith('/') ? src.slice(1) : src;
+    return `${cleanBase}${cleanSrc}`;
+  }
+
   // Music Player methods
   public initMusic(src: string): void {
     if (typeof window === 'undefined') return;
+    const resolvedSrc = this.resolveAudioUrl(src);
     if (!this.audioElement) {
       this.audioElement = new Audio();
       this.audioElement.loop = true; // A13: 음악 자동 반복 재생
       this.audioElement.volume = this.volume;
     }
-    if (this.currentTrackSrc !== src) {
-      this.currentTrackSrc = src;
-      this.audioElement.src = src;
+    if (this.currentTrackSrc !== resolvedSrc) {
+      this.currentTrackSrc = resolvedSrc;
+      this.audioElement.src = resolvedSrc;
     }
   }
 

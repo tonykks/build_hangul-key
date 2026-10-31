@@ -206,9 +206,13 @@ export const KEY_CODE_MAP: Record<string, KeyMapping> = {
   Slash: { code: 'Slash', normalKo: '/', shiftKo: '?', normalEn: '/', shiftEn: '?', hand: 'right', row: 4, col: 10 },
 };
 
+const baseUrl = import.meta.env.BASE_URL || '/';
+const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+
 export const MUSIC_TRACKS: MusicTrack[] = [
-  { id: 'track1', title: '리듬 1 (2/4 박자 경쾌한 리듬)', src: '/musics/track1.mp3' },
-  { id: 'track2', title: '리듬 2 (2/4 박자 안정된 템포)', src: '/musics/track2.mp3' },
-  { id: 'track3', title: '리듬 3 (2/4 박자 차분한 리듬)', src: '/musics/track3.mp3' },
-  { id: 'track4', title: '리듬 4 (2/4 박자 활기찬 리듬)', src: '/musics/track4.mp3' },
+  { id: 'track1', title: '리듬 1 (2/4 박자 경쾌한 리듬)', src: `${cleanBaseUrl}musics/track1.mp3` },
+  { id: 'track2', title: '리듬 2 (2/4 박자 안정된 템포)', src: `${cleanBaseUrl}musics/track2.mp3` },
+  { id: 'track3', title: '리듬 3 (2/4 박자 차분한 리듬)', src: `${cleanBaseUrl}musics/track3.mp3` },
+  { id: 'track4', title: '리듬 4 (2/4 박자 활기찬 리듬)', src: `${cleanBaseUrl}musics/track4.mp3` },
 ];
+
